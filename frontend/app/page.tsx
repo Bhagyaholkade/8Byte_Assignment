@@ -17,13 +17,14 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [viewMode, setViewMode] = useState<'table' | 'cards' | 'analytics'>('table'); // Default to table view
+  const [viewMode, setViewMode] = useState<'table' | 'cards' | 'analytics'>('table');
   const [liveStatus, setLiveStatus] = useState<{
     yahooFinanceEnabled: boolean;
     stocksWithLiveData: number;
   } | null>(null);
   const [countdown, setCountdown] = useState(15);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [backendAvailable, setBackendAvailable] = useState(true);
 
   // Auto-refresh every 15 seconds with countdown
   useEffect(() => {
@@ -33,7 +34,7 @@ export default function Home() {
     const countdownInterval = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
-          return 15; // Reset countdown
+          return 15;
         }
         return prev - 1;
       });
@@ -41,14 +42,16 @@ export default function Home() {
 
     // Data refresh interval
     const refreshInterval = setInterval(() => {
-      loadData(true); // Silent refresh
-    }, 15000); // 15 seconds
+      if (backendAvailable) {
+        loadData(true);
+      }
+    }, 15000);
 
     return () => {
       clearInterval(countdownInterval);
       clearInterval(refreshInterval);
     };
-  }, [selectedSector]);
+  }, [selectedSector, backendAvailable]);
 
   async function loadData(silent = false) {
     if (!silent) {
@@ -79,10 +82,12 @@ export default function Home() {
       setSectors(sectorsData || []);
       setLiveStatus(liveStatusData);
       setLastUpdated(new Date());
-      setCountdown(15); // Reset countdown after successful load
+      setCountdown(15);
+      setBackendAvailable(true);
     } catch (error) {
       console.error('Error loading data:', error);
       setError(error instanceof Error ? error.message : 'Failed to load data');
+      setBackendAvailable(false);
     } finally {
       if (!silent) {
         setLoading(false);
@@ -95,6 +100,97 @@ export default function Home() {
     String(stock.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     String(stock.symbol || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Show backend setup message if backend is not available
+  if (!backendAvailable && !loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-100 flex items-center justify-center p-6">
+        <div className="max-w-2xl w-full">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 border-2 border-blue-200">
+            <div className="text-center mb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <span className="text-4xl">🚀</span>
+              </div>
+              <h1 className="text-4xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                Stock Portfolio Dashboard
+              </h1>
+              <p className="text-gray-600 font-medium">Frontend Successfully Deployed!</p>
+            </div>
+
+            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-2xl p-6 mb-6">
+              <div className="flex items-start gap-3">
+                <span className="text-3xl">⚠️</span>
+                <div>
+                  <h3 className="text-xl font-bold text-yellow-800 mb-2">Backend Not Connected</h3>
+                  <p className="text-yellow-700 mb-3">
+                    The frontend is deployed successfully, but the backend API is not yet available.
+                  </p>
+                  <div className="bg-white/60 rounded-lg p-3 text-sm text-gray-700">
+                    <p className="font-semibold mb-1">Current API URL:</p>
+                    <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+                      {process.env.NEXT_PUBLIC_API_URL || 'Not configured'}
+                    </code>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 mb-6">
+              <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
+                <span>📋</span> Next Steps:
+              </h3>
+              <ol className="space-y-3 text-gray-700">
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                  <div>
+                    <p className="font-semibold">Deploy your backend</p>
+                    <p className="text-sm text-gray-600">Deploy the Node.js backend to Render, Railway, or any hosting service</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                  <div>
+                    <p className="font-semibold">Configure environment variable</p>
+                    <p className="text-sm text-gray-600">Add <code className="bg-gray-100 px-1 rounded">NEXT_PUBLIC_API_URL</code> in Vercel Settings → Environment Variables</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                  <div>
+                    <p className="font-semibold">Redeploy</p>
+                    <p className="text-sm text-gray-600">Trigger a new deployment in Vercel to apply the changes</p>
+                  </div>
+                </li>
+              </ol>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => loadData()}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
+              >
+                🔄 Retry Connection
+              </button>
+              <a
+                href="https://vercel.com/docs/environment-variables"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-bold rounded-xl hover:border-blue-400 transition-all"
+              >
+                📚 Docs
+              </a>
+            </div>
+
+            <div className="mt-6 pt-6 border-t-2 border-gray-200 text-center">
+              <p className="text-sm text-gray-500">
+                Built with ❤️ using Next.js & Node.js
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-100">
@@ -189,7 +285,7 @@ export default function Home() {
                 <h3 className="text-xl font-bold text-red-700">Error Loading Data</h3>
                 <p className="text-red-600 mt-1">{error}</p>
                 <p className="text-sm text-red-500 mt-2">
-                  Make sure the backend server is running on http://localhost:5000
+                  Make sure the backend server is running and NEXT_PUBLIC_API_URL is configured
                 </p>
                 <button
                   onClick={() => loadData()}
@@ -218,7 +314,7 @@ export default function Home() {
             {/* Summary Cards */}
             {summary && <SummaryCards summary={summary} />}
 
-            {/* Alerts Section - Redesigned */}
+            {/* Alerts Section */}
             {alerts && (alerts.mustExit.length > 0 || alerts.stage2.length > 0) && (
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-6">
@@ -236,11 +332,8 @@ export default function Home() {
                   {/* Must Exit Section */}
                   {alerts.mustExit.length > 0 && (
                     <div className="group relative">
-                      {/* Decorative background */}
                       <div className="absolute inset-0 bg-gradient-to-br from-red-100 via-orange-100 to-red-50 rounded-2xl blur-sm opacity-70"></div>
-
                       <div className="relative bg-white/90 backdrop-blur-sm p-6 rounded-2xl border-2 border-red-300 shadow-xl hover:shadow-2xl transition-all">
-                        {/* Header */}
                         <div className="flex items-center justify-between mb-5 pb-4 border-b-2 border-red-200">
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg animate-pulse">
@@ -255,8 +348,6 @@ export default function Home() {
                             {alerts.mustExit.length}
                           </div>
                         </div>
-
-                        {/* Stock List */}
                         <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
                           {alerts.mustExit.map((stock: Stock, index: number) => (
                             <div
@@ -298,11 +389,8 @@ export default function Home() {
                   {/* Stage-2 Section */}
                   {alerts.stage2.length > 0 && (
                     <div className="group relative">
-                      {/* Decorative background */}
                       <div className="absolute inset-0 bg-gradient-to-br from-green-100 via-emerald-100 to-green-50 rounded-2xl blur-sm opacity-70"></div>
-
                       <div className="relative bg-white/90 backdrop-blur-sm p-6 rounded-2xl border-2 border-green-300 shadow-xl hover:shadow-2xl transition-all">
-                        {/* Header */}
                         <div className="flex items-center justify-between mb-5 pb-4 border-b-2 border-green-200">
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -317,8 +405,6 @@ export default function Home() {
                             {alerts.stage2.length}
                           </div>
                         </div>
-
-                        {/* Stock List */}
                         <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
                           {alerts.stage2.map((stock: Stock, index: number) => (
                             <div
@@ -469,7 +555,7 @@ export default function Home() {
               </>
             )}
 
-            {filteredStocks.length === 0 && (
+            {filteredStocks.length === 0 && stocks.length > 0 && (
               <div className="text-center py-20 bg-white/60 backdrop-blur-sm rounded-2xl border-2 border-gray-200">
                 <div className="text-6xl mb-4">🔍</div>
                 <p className="text-gray-600 text-xl font-bold">No stocks found matching your criteria.</p>
