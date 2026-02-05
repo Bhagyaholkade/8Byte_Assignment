@@ -24,7 +24,7 @@ export default function Home() {
   } | null>(null);
   const [countdown, setCountdown] = useState(15);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [backendAvailable, setBackendAvailable] = useState(true);
+  const [backendAvailable, setBackendAvailable] = useState(false);
 
   // Auto-refresh every 15 seconds with countdown
   useEffect(() => {
