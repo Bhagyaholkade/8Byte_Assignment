@@ -1,8 +1,11 @@
 {
-  "name": "backend",
+  "name": "stock-portfolio-api",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Stock Portfolio Dashboard API with live Yahoo Finance data",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",

@@ -5,8 +5,12 @@ const { parseExcelData, getSummary, getAlerts } = require('./dataParser');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
+// Middleware - Enable CORS for all origins in production
+app.use(cors({
+    origin: process.env.FRONTEND_URL || '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // Cache the parsed data
@@ -131,7 +135,8 @@ async function fetchLivePrice(symbol) {
                 eps: quote.epsTrailingTwelveMonths,
                 earningsDate: quote.earningsTimestamp,
                 fiftyTwoWeekHigh: quote.fiftyTwoWeekHigh,
-                fiftyTwoWeekLow: quote.fiftyTwoWeekLow
+                fiftyTwoWeekLow: quote.fiftyTwoWeekLow,
+                exchange: 'NSE'
             };
         }
     } catch (nseError) {
@@ -155,7 +160,8 @@ async function fetchLivePrice(symbol) {
                     eps: quote.epsTrailingTwelveMonths,
                     earningsDate: quote.earningsTimestamp,
                     fiftyTwoWeekHigh: quote.fiftyTwoWeekHigh,
-                    fiftyTwoWeekLow: quote.fiftyTwoWeekLow
+                    fiftyTwoWeekLow: quote.fiftyTwoWeekLow,
+                    exchange: 'BSE'
                 };
             }
         } catch (bseError) {
@@ -195,6 +201,10 @@ async function updateLivePrices() {
                 // Update EPS (Earnings Per Share) if available
                 if (liveData.eps) {
                     stock.eps = liveData.eps;
+                }
+                // Update exchange info
+                if (liveData.exchange) {
+                    stock.exchange = liveData.exchange;
                 }
                 stock.liveData = liveData;
                 updated++;
@@ -299,10 +309,13 @@ app.get('/api/stocks/sector/:name', (req, res) => {
 
 /**
  * GET /api/stocks/summary
- * Get portfolio summary
+ * Get portfolio summary with live data
  */
-app.get('/api/stocks/summary', (req, res) => {
+app.get('/api/stocks/summary', async (req, res) => {
     try {
+        // Ensure we have latest live prices before calculating summary
+        await updateLivePrices();
+
         const summary = getSummary(stocksData);
         res.json({
             success: true,
@@ -318,10 +331,13 @@ app.get('/api/stocks/summary', (req, res) => {
 
 /**
  * GET /api/alerts
- * Get portfolio alerts
+ * Get portfolio alerts with live data
  */
-app.get('/api/alerts', (req, res) => {
+app.get('/api/alerts', async (req, res) => {
     try {
+        // Ensure we have latest live prices
+        await updateLivePrices();
+
         const alerts = getAlerts(stocksData);
         res.json({
             success: true,
