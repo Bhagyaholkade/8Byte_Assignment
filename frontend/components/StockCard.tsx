@@ -53,7 +53,7 @@ export default function StockCard({ stock, onClick }: StockCardProps) {
                         <span className="text-sm font-semibold text-gray-500 px-2 py-0.5 bg-gray-100 rounded-md">
                             {stock.symbol || 'N/A'}
                         </span>
-                        <span className="text-xs text-gray-400">#{stock.originalId || stock.id}</span>
+                        <span className="text-xs text-gray-400">#{stock.id}</span>
                     </div>
                 </div>
 
