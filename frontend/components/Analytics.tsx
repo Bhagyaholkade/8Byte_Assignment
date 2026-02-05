@@ -1,7 +1,7 @@
 'use client';
 
 import { Stock } from '@/lib/api';
-import { formatCurrency, formatCompactNumber } from '@/lib/utils';
+import { formatCompactNumber } from '@/lib/utils';
 import {
     PieChart, Pie, Cell, BarChart, Bar,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -262,7 +262,7 @@ export default function Analytics({ stocks, summary }: AnalyticsProps) {
                                 cx="50%"
                                 cy="50%"
                                 labelLine={false}
-                                label={({ name, percent }: { name: string; percent?: number }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                                label={({ name, percent }: { name?: string; percent?: number }) => `${name || ''} ${((percent || 0) * 100).toFixed(0)}%`}
                                 outerRadius={100}
                                 fill="#8884d8"
                                 dataKey="value"
@@ -325,7 +325,7 @@ export default function Analytics({ stocks, summary }: AnalyticsProps) {
                             <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} fontSize={10} />
                             <YAxis tickFormatter={(value) => `${value}%`} />
                             <Tooltip
-                                formatter={(value: any, name: string) => [
+                                formatter={(value: any, name?: string) => [
                                     `${value.toFixed(2)}%`,
                                     name === 'gain' ? 'Total Gain' : 'Day Change'
                                 ]}
