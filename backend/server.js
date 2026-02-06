@@ -5,11 +5,34 @@ const { parseExcelData, getSummary, getAlerts } = require('./dataParser');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware - Enable CORS for all origins in production
+// Middleware - Enable CORS for Vercel domains
 app.use(cors({
-    origin: process.env.FRONTEND_URL || '*',
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+
+        // Allow all Vercel preview URLs and production URL
+        const allowedPatterns = [
+            /\.vercel\.app$/,
+            /localhost/,
+            /127\.0\.0\.1/
+        ];
+
+        const isAllowed = allowedPatterns.some(pattern => pattern.test(origin));
+        if (isAllowed) {
+            return callback(null, true);
+        }
+
+        // Also check explicit FRONTEND_URL
+        if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+            return callback(null, true);
+        }
+
+        callback(new Error('Not allowed by CORS'));
+    },
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
 }));
 app.use(express.json());
 
